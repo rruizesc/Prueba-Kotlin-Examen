@@ -6,17 +6,14 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -30,6 +27,10 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun SumadoraApp() {
     val viewModel: SumadoraViewModel = viewModel()
+
+    // Estado para controlar qué pantalla mostrar
+    var currentScreen by remember { mutableStateOf<Screen>(Screen.Input) }
+
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
@@ -41,18 +42,33 @@ fun SumadoraApp() {
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Pantalla de entrada
-            InputScreen(viewModel)
-            Spacer(modifier = Modifier.height(16.dp))
-            // Pantalla de resultados
-            ResultScreen(viewModel)
+            when (currentScreen) {
+                is Screen.Input -> {
+                    InputScreen(
+                        viewModel = viewModel,
+                        onSumResult = {
+                            // Cambiar a la pantalla de resultados y pasar el resultado
+                            currentScreen = Screen.Result(it)
+                        }
+                    )
+                }
+                is Screen.Result -> {
+                    val resultScreen = currentScreen as Screen.Result
+                    ResultScreen(viewModel, resultScreen.result) {
+                        // Volver a la pantalla de entrada
+                        currentScreen = Screen.Input
+                    }
+                }
+            }
+
+
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun InputScreen(viewModel: SumadoraViewModel) {
+fun InputScreen(viewModel: SumadoraViewModel, onSumResult: (String) -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -82,6 +98,7 @@ fun InputScreen(viewModel: SumadoraViewModel) {
         Button(
             onClick = {
                 viewModel.sumar()
+                onSumResult(viewModel.resultadoActual)
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -94,7 +111,7 @@ fun InputScreen(viewModel: SumadoraViewModel) {
 
 
 @Composable
-fun ResultScreen(viewModel: SumadoraViewModel) {
+fun ResultScreen(viewModel: SumadoraViewModel, result: String, onBack: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -103,15 +120,36 @@ fun ResultScreen(viewModel: SumadoraViewModel) {
     ) {
         Text("Resultado actual:", style = MaterialTheme.typography.labelMedium)
         Spacer(modifier = Modifier.height(8.dp))
-        Text("0", style = MaterialTheme.typography.bodySmall)
+        Text(result, style = MaterialTheme.typography.bodySmall)
         Spacer(modifier = Modifier.height(16.dp))
         Text("Resultados anteriores:", style = MaterialTheme.typography.labelMedium)
         Spacer(modifier = Modifier.height(8.dp))
 
-        LazyColumn {
-            items(viewModel.resultadosAnteriores) { item ->
-                Text(item, style = MaterialTheme.typography.bodySmall)
+        // Convertir la lista de resultados anteriores a una cadena
+        val resultadosAnterioresText = buildString {
+            for (resultado in viewModel.resultadosAnteriores) {
+                append(resultado)
+                append("\n") // Agregar un salto de línea entre cada resultado
             }
         }
+
+        // Mostrar la cadena resultante
+        Text(resultadosAnterioresText, style = MaterialTheme.typography.bodySmall)
+
+        // Botón para volver a la pantalla de entrada
+        Button(
+            onClick = onBack,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp)
+        ) {
+            Text("Volver a la entrada")
+        }
     }
+}
+
+
+sealed class Screen {
+    object Input : Screen()
+    data class Result(val result: String) : Screen()
 }
