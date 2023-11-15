@@ -1,4 +1,3 @@
-// MainActivity.kt
 package com.example.prueba_kotlin_examen
 
 import android.os.Bundle
@@ -28,7 +27,6 @@ class MainActivity : ComponentActivity() {
 fun SumadoraApp() {
     val viewModel: SumadoraViewModel = viewModel()
 
-    // Estado para controlar qué pantalla mostrar
     var currentScreen by remember { mutableStateOf<Screen>(Screen.Input) }
 
     Surface(
@@ -47,7 +45,6 @@ fun SumadoraApp() {
                     InputScreen(
                         viewModel = viewModel,
                         onSumResult = {
-                            // Cambiar a la pantalla de resultados y pasar el resultado
                             currentScreen = Screen.Result(it)
                         }
                     )
@@ -55,7 +52,7 @@ fun SumadoraApp() {
                 is Screen.Result -> {
                     val resultScreen = currentScreen as Screen.Result
                     ResultScreen(viewModel, resultScreen.result) {
-                        // Volver a la pantalla de entrada
+
                         currentScreen = Screen.Input
                     }
                 }
@@ -125,15 +122,14 @@ fun ResultScreen(viewModel: SumadoraViewModel, result: String, onBack: () -> Uni
         Text("Resultados anteriores:", style = MaterialTheme.typography.labelMedium)
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Convertir la lista de resultados anteriores a una cadena
+
         val resultadosAnterioresText = buildString {
             for (resultado in viewModel.resultadosAnteriores) {
                 append(resultado)
-                append("\n") // Agregar un salto de línea entre cada resultado
+                append("\n")
             }
         }
 
-        // Mostrar la cadena resultante
         Text(resultadosAnterioresText, style = MaterialTheme.typography.bodySmall)
 
         // Botón para volver a la pantalla de entrada
